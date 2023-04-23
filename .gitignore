@@ -23,3 +23,10 @@ go.work
 # Env files
 .env
 .env*
+
+# IDEA Files
+.idea
+
+# DBs
+*.sqlite
+*.db
