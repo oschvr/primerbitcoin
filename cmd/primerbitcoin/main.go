@@ -4,10 +4,12 @@ import (
 	"fmt"
 	binance "github.com/adshao/go-binance/v2"
 	"github.com/common-nighthawk/go-figure"
+	"github.com/go-co-op/gocron"
 	"github.com/joho/godotenv"
 	"os"
 	"primerbitcoin/database"
 	"primerbitcoin/pkg/exchanges"
+	"primerbitcoin/utils"
 	"time"
 )
 
@@ -36,32 +38,21 @@ func main() {
 	banner := figure.NewFigure("primerbitcoin!", "", true)
 	banner.Print()
 
-	// Run Create Order
-	exchanges.GetBalance(client)
-	exchanges.CreateOrder(client, btcToBuy, "BTCUSDT", "BUY")
-	cronjob := func() {
-		// Get the current time
-		t := time.Now()
+	// Create scheduler
+	scheduler := gocron.NewScheduler(time.UTC)
 
-		// Check if the minute is divisible by 2c
-		if t.Minute()%2 == 0 {
-			// Run the buyBTC function
-			exchanges.CreateOrder(client, btcToBuy, "BTCUSDT", "BUY")
-		}
+	// Configure job
+	job, err := scheduler.Tag("primerbitcoin").Every(1).Minute().Do(func() {
+		// Run Create Order
+		exchanges.GetBalance(client)
+		exchanges.CreateOrder(client, btcToBuy, "BTCUSDT", "BUY")
+	})
+	if err != nil {
+		utils.Logger.Errorf("Unable to run cronjob %s", err)
 	}
 
-	// Run the cronjob indefinitely
-	for {
-		// Get the current time
-		t := time.Now()
+	utils.Logger.Infof("Running job %s", job.Tags())
 
-		// Check if the current time is divisible by 1 minute
-		if t.Second()%60 == 0 {
-			// Run the cronjob function
-			cronjob()
-		}
-
-		// Sleep for 1 second
-		time.Sleep(time.Second)
-	}
+	// Start scheduler
+	scheduler.StartBlocking()
 }
