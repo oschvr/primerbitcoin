@@ -7,12 +7,16 @@ import (
 	"github.com/adshao/go-binance/v2"
 	"log"
 	"primerbitcoin/database"
+	"primerbitcoin/pkg/notifications"
 	"primerbitcoin/pkg/utils"
 	"strconv"
 )
 
 // CreateOrder runs a custom buy/sell order
 func CreateOrder(client *binance.Client, quantity string, symbol string, side string) {
+
+	// Get balance
+	getBalance(client)
 
 	// Get price
 	price, err := getPrice(client, symbol)
@@ -52,7 +56,7 @@ func CreateOrder(client *binance.Client, quantity string, symbol string, side st
 	}
 
 	// Execute sql statement
-	row, err := stmt.Exec("binance", order.Symbol, order.ExecutedQuantity, price, true, order.OrderID)
+	row, err := stmt.Exec("BINANCE", order.Symbol, order.ExecutedQuantity, price, true, order.OrderID)
 	if err != nil {
 		utils.Logger.Warn("Unable to persist order in db, ", err)
 	}
@@ -70,11 +74,14 @@ func CreateOrder(client *binance.Client, quantity string, symbol string, side st
 	parsedPrice, _ := strconv.ParseFloat(price, 64)
 	total := parsedQty * parsedPrice
 
+	// Send msg to telegram
+	notifications.SendTelegramMessage(fmt.Sprintf("🎉 You just bought %.4f BTC at price of %.2f USDT per BTC. Cost: %.2f", parsedQty, parsedPrice, total))
+
 	utils.Logger.Infof("Bought %.4f BTC at price of %.4f USDT per BTC. Cost: %.4f", parsedQty, parsedPrice, total)
 }
 
 // GetBalance will get the balances for the clients account
-func GetBalance(client *binance.Client) {
+func getBalance(client *binance.Client) {
 	utils.Logger.Info("Getting balance")
 	accountService := client.NewGetAccountService()
 	account, err := accountService.Do(context.Background())

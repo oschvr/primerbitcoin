@@ -31,7 +31,7 @@ func main() {
 	// Define necessary configuration options
 	apiKey := os.Getenv("API_KEY")
 	apiSecret := os.Getenv("SECRET_KEY")
-	btcToBuy := "0.001"
+	amount := "0.001"
 
 	// Create a new Binance API client (USE TESTNET)
 	binance.UseTestnet = true
@@ -43,8 +43,7 @@ func main() {
 	// Configure job
 	job, err := scheduler.Tag(os.Getenv("APP_NAME")).Every(1).Minute().Do(func() {
 		// Run Create Order
-		exchanges.GetBalance(client)
-		exchanges.CreateOrder(client, btcToBuy, "BTCUSDT", "BUY")
+		exchanges.CreateOrder(client, amount, "BTCUSDT", "BUY")
 	})
 	if err != nil {
 		utils.Logger.Errorf("Unable to run cronjob %s", err)
