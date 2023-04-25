@@ -7,32 +7,34 @@ import (
 	"github.com/adshao/go-binance/v2"
 	"log"
 	"primerbitcoin/database"
-	"primerbitcoin/utils"
+	"primerbitcoin/pkg/utils"
 	"strconv"
 )
 
 // CreateOrder runs a custom buy/sell order
-func CreateOrder(client *binance.Client, qty string, symbol string, side string) {
+func CreateOrder(client *binance.Client, quantity string, symbol string, side string) {
 
 	// Get price
 	price, err := getPrice(client, symbol)
 	if err != nil {
 		utils.Logger.Errorf("Could not get price for %s", symbol)
 	}
+	utils.Logger.Infof("Buying %s of %s", quantity, symbol)
 
-	utils.Logger.Infof("Buying %s of %s", qty, symbol)
+	//// Create instance of Order model
+	//model := models.Order{Exchange: "binance", Symbol: symbol, Price: price, Success: true, Side: side, Quantity: quantity}
 
 	// Prepare database insert
-	query, err := database.DB.Prepare("INSERT INTO orders(symbol, quantity, price, success) VALUES (?,?,?,?)")
+	stmt, err := database.DB.Prepare("INSERT INTO orders(exchange, symbol, quantity, price, success, order_id) VALUES (?,?,?,?,?,?)")
 	if err != nil {
 		log.Panicf("Unable to prepare order statement")
 	}
-	defer func(query *sql.Stmt) {
-		err := query.Close()
+	defer func(stmt *sql.Stmt) {
+		err := stmt.Close()
 		if err != nil {
 
 		}
-	}(query)
+	}(stmt)
 
 	// Define side, if its buy or sell
 	var sideType binance.SideType
@@ -43,18 +45,27 @@ func CreateOrder(client *binance.Client, qty string, symbol string, side string)
 	}
 
 	// Use the Binance API client to execute a market buy order for BTC
-	order, err := client.NewCreateOrderService().Symbol(symbol).Side(sideType).Type(binance.OrderTypeMarket).Quantity(qty).Do(context.Background())
+	order, err := client.NewCreateOrderService().Symbol(symbol).Side(sideType).Type(binance.OrderTypeMarket).Quantity(quantity).Do(context.Background())
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 
 	// Execute sql statement
-	_, err = query.Exec(symbol, qty, price, true)
+	row, err := stmt.Exec("binance", order.Symbol, order.ExecutedQuantity, price, true, order.OrderID)
 	if err != nil {
-		log.Panicf("Unable to persist order in db")
+		utils.Logger.Warn("Unable to persist order in db, ", err)
 	}
 
+	// Check if order persisted
+	orderPersisted, err := row.RowsAffected()
+	if err != nil {
+		utils.Logger.Warn("Unable to persist order in db, ", err)
+	} else if orderPersisted >= 1 {
+		utils.Logger.Infof("Order %d persisted in db.", order.OrderID)
+	}
+
+	// Output to log
 	parsedQty, _ := strconv.ParseFloat(order.ExecutedQuantity, 64)
 	parsedPrice, _ := strconv.ParseFloat(price, 64)
 	total := parsedQty * parsedPrice
@@ -68,7 +79,7 @@ func GetBalance(client *binance.Client) {
 	accountService := client.NewGetAccountService()
 	account, err := accountService.Do(context.Background())
 	if err != nil {
-		log.Panicf("Unable to get account information")
+		utils.Logger.Panic("Unable to get account information", err)
 	}
 
 	for _, balance := range account.Balances {
@@ -81,8 +92,8 @@ func getPrice(client *binance.Client, symbol string) (string, error) {
 	utils.Logger.Infof("Getting price for %s", symbol)
 	prices, err := client.NewListPricesService().Do(context.Background())
 	if err != nil {
-		fmt.Println(err)
-		return "", nil
+		utils.Logger.Error("Unable to get prices information, ", err)
+		return "", err
 	}
 
 	for _, p := range prices {
@@ -90,6 +101,6 @@ func getPrice(client *binance.Client, symbol string) (string, error) {
 			return p.Price, nil
 		}
 	}
-	log.Panicf("Symbol %s not found", symbol)
+	utils.Logger.Warnf("Symbol %s not found", symbol)
 	return "", nil
 }

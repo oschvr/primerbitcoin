@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	binance "github.com/adshao/go-binance/v2"
 	"github.com/common-nighthawk/go-figure"
 	"github.com/go-co-op/gocron"
@@ -9,21 +8,25 @@ import (
 	"os"
 	"primerbitcoin/database"
 	"primerbitcoin/pkg/exchanges"
-	"primerbitcoin/utils"
+	"primerbitcoin/pkg/utils"
 	"time"
 )
 
 func main() {
 
-	// Execute Migrations
-	database.Migrate()
-
 	// Load env vars from .env file
 	err := godotenv.Load()
 	if err != nil {
-		fmt.Println("Error loading .env file")
+		utils.Logger.Panic("Error loading .env file, ", err)
 		return
 	}
+
+	// Execute Migrations
+	database.Migrate()
+
+	// Create banner
+	banner := figure.NewFigure(os.Getenv("APP_NAME"), "", true)
+	banner.Print()
 
 	// Define necessary configuration options
 	apiKey := os.Getenv("API_KEY")
@@ -34,15 +37,11 @@ func main() {
 	binance.UseTestnet = true
 	client := binance.NewClient(apiKey, apiSecret)
 
-	// Create banner
-	banner := figure.NewFigure("primerbitcoin!", "", true)
-	banner.Print()
-
 	// Create scheduler
 	scheduler := gocron.NewScheduler(time.UTC)
 
 	// Configure job
-	job, err := scheduler.Tag("primerbitcoin").Every(1).Minute().Do(func() {
+	job, err := scheduler.Tag(os.Getenv("APP_NAME")).Every(1).Minute().Do(func() {
 		// Run Create Order
 		exchanges.GetBalance(client)
 		exchanges.CreateOrder(client, btcToBuy, "BTCUSDT", "BUY")
