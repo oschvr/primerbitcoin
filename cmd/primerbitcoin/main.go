@@ -7,12 +7,18 @@ import (
 	"github.com/joho/godotenv"
 	"os"
 	"primerbitcoin/database"
+	"primerbitcoin/pkg/config"
 	"primerbitcoin/pkg/exchanges"
 	"primerbitcoin/pkg/utils"
 	"time"
 )
 
+var cfg config.Config
+
 func main() {
+
+	//Create global config
+	config.DecodeConfig(&cfg)
 
 	// Load env vars from .env file
 	err := godotenv.Load()
@@ -22,7 +28,7 @@ func main() {
 	}
 
 	// Execute Migrations
-	database.Migrate()
+	database.Migrate(cfg)
 
 	// Create banner
 	banner := figure.NewFigure(os.Getenv("APP_NAME"), "", true)
@@ -31,8 +37,6 @@ func main() {
 	// Define necessary configuration options
 	apiKey := os.Getenv("API_KEY")
 	apiSecret := os.Getenv("SECRET_KEY")
-	amount := "0.001"
-
 	// Create a new Binance API client (USE TESTNET)
 	binance.UseTestnet = true
 	client := binance.NewClient(apiKey, apiSecret)
@@ -41,10 +45,11 @@ func main() {
 	scheduler := gocron.NewScheduler(time.UTC)
 
 	// Configure job
-	job, err := scheduler.Tag(os.Getenv("APP_NAME")).Every(1).Minute().Do(func() {
+	job, err := scheduler.Tag(os.Getenv("APP_NAME")).Cron(cfg.Scheduler.Schedule).Do(func() {
 		// Run Create Order
-		exchanges.CreateOrder(client, amount, "BTCUSDT", "BUY")
+		exchanges.CreateOrder(client, cfg.Order.Amount, cfg.Order.Symbol, cfg.Order.Side, cfg.Order.Minor)
 	})
+
 	if err != nil {
 		utils.Logger.Errorf("Unable to run cronjob %s", err)
 	}

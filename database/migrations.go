@@ -8,7 +8,7 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/joho/godotenv"
 	_ "github.com/mattn/go-sqlite3"
-	"os"
+	"primerbitcoin/pkg/config"
 	"primerbitcoin/pkg/utils"
 )
 
@@ -20,7 +20,7 @@ func init() {
 	}
 }
 
-func Migrate() {
+func Migrate(config config.Config) {
 
 	// Migration for SQLite db
 	utils.Logger.Info("Migrating database")
@@ -31,7 +31,7 @@ func Migrate() {
 	}
 
 	// Define database URI
-	dbUri := fmt.Sprintf("sqlite3://%s", os.Getenv("DATABASE_NAME"))
+	dbUri := fmt.Sprintf("sqlite3://%s", config.Database.Host)
 	utils.Logger.Infof("Running migrations against %s", dbUri)
 
 	// Create a new migration source

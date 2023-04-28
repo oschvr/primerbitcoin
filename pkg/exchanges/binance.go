@@ -13,10 +13,10 @@ import (
 )
 
 // CreateOrder runs a custom buy/sell order
-func CreateOrder(client *binance.Client, quantity string, symbol string, side string) {
+func CreateOrder(client *binance.Client, quantity string, symbol string, side string, minor string) {
 
 	// Get balance
-	getBalance(client)
+	balance := getBalance(client, minor)
 
 	// Get price
 	price, err := getPrice(client, symbol)
@@ -55,6 +55,13 @@ func CreateOrder(client *binance.Client, quantity string, symbol string, side st
 		return
 	}
 
+	// Calculate
+	parsedBalance, _ := strconv.ParseFloat(balance, 64)
+	parsedExecutedQty, _ := strconv.ParseFloat(order.ExecutedQuantity, 64)
+	parsedPrice, _ := strconv.ParseFloat(price, 64)
+	totalExecuted := parsedExecutedQty * parsedPrice
+	newBalance := parsedBalance - totalExecuted
+
 	// Execute sql statement
 	row, err := stmt.Exec("BINANCE", order.Symbol, order.ExecutedQuantity, price, true, order.OrderID)
 	if err != nil {
@@ -69,19 +76,14 @@ func CreateOrder(client *binance.Client, quantity string, symbol string, side st
 		utils.Logger.Infof("Order %d persisted in db.", order.OrderID)
 	}
 
-	// Output to log
-	parsedQty, _ := strconv.ParseFloat(order.ExecutedQuantity, 64)
-	parsedPrice, _ := strconv.ParseFloat(price, 64)
-	total := parsedQty * parsedPrice
-
 	// Send msg to telegram
-	notifications.SendTelegramMessage(fmt.Sprintf("🎉 You just bought %.4f BTC at price of %.2f USDT per BTC. Cost: %.2f", parsedQty, parsedPrice, total))
+	notifications.SendTelegramMessage(fmt.Sprintf("[🟢primerbitcoin] 🎉 You just bought %.4f of %s at price of %.2f in %s.\n 💸 Total spent : %.2f. \n 🏦Remaining balance of %.2f", parsedExecutedQty, symbol, parsedPrice, "binance", totalExecuted, newBalance))
 
-	utils.Logger.Infof("Bought %.4f BTC at price of %.4f USDT per BTC. Cost: %.4f", parsedQty, parsedPrice, total)
+	utils.Logger.Infof("Order ID: %d. Bought %.4f of %s at price of %.2f in %s. 💸 Total spent : %.2f. Remaining balance of %.2f", order.OrderID, parsedExecutedQty, symbol, parsedPrice, "binance", totalExecuted, newBalance)
 }
 
 // GetBalance will get the balances for the clients account
-func getBalance(client *binance.Client) {
+func getBalance(client *binance.Client, minor string) string {
 	utils.Logger.Info("Getting balance")
 	accountService := client.NewGetAccountService()
 	account, err := accountService.Do(context.Background())
@@ -90,8 +92,12 @@ func getBalance(client *binance.Client) {
 	}
 
 	for _, balance := range account.Balances {
-		fmt.Printf("%s: %s\n", balance.Asset, balance.Free)
+		if balance.Asset == minor {
+			utils.Logger.Infof("Balance of %s is %s", balance.Asset, balance.Free)
+			return balance.Free
+		}
 	}
+	return ""
 }
 
 // Get price for symbol

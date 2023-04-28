@@ -21,6 +21,7 @@ func SendTelegramMessage(message string) {
 	msg := tgbotapi.NewMessage(1386479921, message)
 
 	// Use the bot.Send method to send the message.
+	utils.Logger.Info("Sending message to Telegram")
 	_, err = bot.Send(msg)
 	if err != nil {
 		log.Panic(err)

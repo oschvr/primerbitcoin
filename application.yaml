@@ -1,0 +1,11 @@
+port: 8080
+database:
+  host: primerbitcoin.sqlite
+scheduler:
+  schedule: "* * * * *"
+order:
+  side: BUY
+  minor: USDT
+  major: BTC
+  symbol: BTCUSDT
+  amount: 0.001
