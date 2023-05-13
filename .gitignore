@@ -30,3 +30,6 @@ go.work
 # DBs
 *.sqlite
 *.db
+
+# Builds
+build

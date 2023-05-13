@@ -54,7 +54,7 @@ func main() {
 		utils.Logger.Errorf("Unable to run cronjob %s", err)
 	}
 
-	utils.Logger.Infof("Running job %s", job.Tags())
+	utils.Logger.Infof("Running job %s with cron schedule %s", job.Tags(), cfg.Scheduler.Schedule)
 
 	// Start scheduler
 	scheduler.StartBlocking()

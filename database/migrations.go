@@ -1,16 +1,21 @@
 package database
 
 import (
+	"embed"
 	"fmt"
 	"github.com/golang-migrate/migrate/v4"
-	"github.com/golang-migrate/migrate/v4/database/sqlite3"
-	_ "github.com/golang-migrate/migrate/v4/database/sqlite3"
+	"github.com/golang-migrate/migrate/v4/database/sqlite"
+	_ "github.com/golang-migrate/migrate/v4/database/sqlite"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
+	"github.com/golang-migrate/migrate/v4/source/iofs"
 	"github.com/joho/godotenv"
-	_ "github.com/mattn/go-sqlite3"
+	"os"
 	"primerbitcoin/pkg/config"
 	"primerbitcoin/pkg/utils"
 )
+
+//go:embed migrations/*.sql
+var migrations embed.FS
 
 func init() {
 	// Load env vars
@@ -22,9 +27,15 @@ func init() {
 
 func Migrate(config config.Config) {
 
+	// Embed migrations in binary
+	migrationsEmbed, err := iofs.New(migrations, "migrations")
+	if err != nil {
+		utils.Logger.Panic("Unable to embed migrations in binary")
+	}
+
 	// Migration for SQLite db
 	utils.Logger.Info("Migrating database")
-	driver, err := sqlite3.WithInstance(DB, &sqlite3.Config{})
+	driver, err := sqlite.WithInstance(DB, &sqlite.Config{})
 	if err != nil {
 		utils.Logger.Error("Unable to initialize sqlite3 driver, ", err)
 		panic(err)
@@ -35,7 +46,7 @@ func Migrate(config config.Config) {
 	utils.Logger.Infof("Running migrations against %s", dbUri)
 
 	// Create a new migration source
-	m, err := migrate.NewWithDatabaseInstance("file://database/migrations", dbUri, driver)
+	m, err := migrate.NewWithInstance("iofs", migrationsEmbed, os.Getenv("DATABASE_NAME"), driver)
 	if err != nil {
 		utils.Logger.Error("Unable to create migrations from source, ", err)
 		panic(err)

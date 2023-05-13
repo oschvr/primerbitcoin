@@ -3,7 +3,7 @@ package database
 import (
 	"database/sql"
 	_ "github.com/joho/godotenv/autoload"
-	_ "github.com/mattn/go-sqlite3"
+	_ "modernc.org/sqlite"
 	"os"
 	"path/filepath"
 	"primerbitcoin/pkg/utils"
@@ -32,7 +32,8 @@ func init() {
 	}
 
 	// Create DB instance
-	DB, err = sql.Open("sqlite3", dbPath)
+	// https://pkg.go.dev/modernc.org/sqlite
+	DB, err = sql.Open("sqlite", dbPath)
 	if err != nil {
 		utils.Logger.Panic("Unable to open database connection, ", err)
 	}
