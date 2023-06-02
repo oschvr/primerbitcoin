@@ -1,0 +1,16 @@
+# /etc/systemd/system/primerbitcoin.service
+[Unit]
+Description=PrimerBitcoin
+Documentation=https://github.com/oschvr/primerbitcoin
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=primerbitcoin
+Group=primerbitcoin
+WorkingDirectory=/home/primerbitcoin
+ExecStart=/home/primerbitcoin/primerbitcoin
+
+[Install]
+WantedBy=multi-user.target
