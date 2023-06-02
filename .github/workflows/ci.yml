@@ -37,3 +37,5 @@ jobs:
           SCRIPT_AFTER: |
             ls -al
             echo $RSYNC_STDOUT
+            sudo systemctl restart primerbitcoin
+            sudo systemctl status primerbitcoin
