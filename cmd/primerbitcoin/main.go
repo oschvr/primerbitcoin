@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	binance "github.com/adshao/go-binance/v2"
 	"github.com/common-nighthawk/go-figure"
 	"github.com/go-co-op/gocron"
@@ -14,6 +15,7 @@ import (
 )
 
 var cfg config.Config
+var version = "0.1.0"
 
 func main() {
 
@@ -31,7 +33,7 @@ func main() {
 	database.Migrate(cfg)
 
 	// Create banner
-	banner := figure.NewFigure(os.Getenv("APP_NAME"), "", true)
+	banner := figure.NewFigure(fmt.Sprintf("%s:%s", os.Getenv("APP_NAME"), version), "", true)
 	banner.Print()
 
 	// Define necessary configuration options

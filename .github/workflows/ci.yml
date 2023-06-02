@@ -19,8 +19,8 @@ jobs:
     - name: Build
       run: GOARCH=amd64 GOOS=linux go build -o build/primerbitcoin cmd/primerbitcoin/main.go
     
-    - name: Debug
-      run: ls -lah && env
+    - name: Build Debug
+      run: ls -lah build
 
     - name: Deploy
       uses: easingthemes/ssh-deploy@main

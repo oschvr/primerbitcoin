@@ -22,6 +22,7 @@ type Config struct {
 		Symbol string `yaml:"symbol"`
 		Amount string `yaml:"amount"`
 	}
+	Version string `yaml:"version"`
 }
 
 func DecodeConfig(config *Config) {
