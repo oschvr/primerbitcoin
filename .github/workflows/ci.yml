@@ -15,6 +15,9 @@ jobs:
       uses: actions/setup-go@v4
       with:
         go-version: '1.19'
+    
+    - name: Debug
+      run: ls -lah && env
 
     - name: Build
       run: GOARCH=amd64 GOOS=linux go build -o build/primerbitcoin cmd/primerbitcoin/main.go
