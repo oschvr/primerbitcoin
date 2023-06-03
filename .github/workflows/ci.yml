@@ -3,7 +3,7 @@ name: Primerbitcoin CI
 on: [push]
 
 jobs:
-  build:
+  ci:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout code
@@ -14,46 +14,34 @@ jobs:
       with:
         go-version: '1.19'
 
+    - name: Calculate version
+      id: taggerDryRun
+      uses: anothrNick/github-tag-action@1.64.0
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        WITH_V: false
+        DRY_RUN: true
+
+    - name: echo new tag
+      run: |
+        echo "The next tag version will be: ${{ steps.taggerDryRun.outputs.new_tag }}"
+    - name: echo tag
+      run: |
+        echo "The current tag is: ${{ steps.taggerDryRun.outputs.tag }}"
+    - name: echo part
+      run: |
+        echo "The version increment was: ${{ steps.taggerDryRun.outputs.part }}"
+
     - name: Build
       run: GOARCH=amd64 GOOS=linux go build -o build/primerbitcoin cmd/primerbitcoin/main.go
 
-  version:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: '0'
-      - name: Minor version for each merge
-        id: taggerDryRun
-        uses: anothrNick/github-tag-action@1.64.0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          WITH_V: false
-          DRY_RUN: true
+    - name: Persist Version
+      id: taggerFinal
+      uses: anothrNick/github-tag-action@1.64.0
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        WITH_V: false
 
-      - name: echo new tag
-        run: |
-          echo "The next tag version will be: ${{ steps.taggerDryRun.outputs.new_tag }}"
-      - name: echo tag
-        run: |
-          echo "The current tag is: ${{ steps.taggerDryRun.outputs.tag }}"
-      - name: echo part
-        run: |
-          echo "The version increment was: ${{ steps.taggerDryRun.outputs.part }}"
-      # DO MY BUILD HERE
-      # IN CASE OF FAILURE, THE STEP BELOW WILL NOT RUN.
-
-
-#      - name: Minor version for each merge
-#        id: taggerFinal
-#        uses: anothrNick/github-tag-action@1.64.0
-#        env:
-#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-#          WITH_V: false
-
-  deploy:
-    runs-on: ubuntu-latest
-    steps:
     - name: Deploy
       uses: easingthemes/ssh-deploy@main
       env:
