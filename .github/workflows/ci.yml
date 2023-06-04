@@ -36,7 +36,8 @@ jobs:
 
     - name: Update version in code
       run: |
-        sed 's/version\ =\ ".*"/version\ =\ "'"${{ steps.taggerDryRun.outputs.new_tag }}"'"/g' cmd/primerbitcoin/main.go > cmd/primerbitcoin/main.go 
+        sed -i 's/version\ =\ ".*"/version\ =\ "'"${{ steps.taggerDryRun.outputs.new_tag }}"'"/g' cmd/primerbitcoin/main.go
+        cat cmd/primerbitcoin/main.go
 
     - name: Build
       run: GOARCH=amd64 GOOS=linux go build -o build/primerbitcoin cmd/primerbitcoin/main.go
