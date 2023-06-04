@@ -22,20 +22,32 @@ jobs:
         WITH_V: false
         DRY_RUN: true
 
-    - name: echo new tag
+    - name: Current Version
       run: |
-        echo "The next tag version will be: ${{ steps.taggerDryRun.outputs.new_tag }}"
-    - name: echo tag
+        echo "${{ steps.taggerDryRun.outputs.tag }}"
+
+    - name: New Version
       run: |
-        echo "The current tag is: ${{ steps.taggerDryRun.outputs.tag }}"
-    - name: echo part
+        echo "${{ steps.taggerDryRun.outputs.new_tag }}"
+
+    - name: Increment type
       run: |
-        echo "The version increment was: ${{ steps.taggerDryRun.outputs.part }}"
+        echo "${{ steps.taggerDryRun.outputs.part }}"
+
+    - name: Update version in code
+      run: |
+        sed 's/version\ =\ ".*"/version\ =\ "'"${{ steps.taggerDryRun.outputs.new_tag }}"'"/g' cmd/primerbitcoin/main.go > cmd/primerbitcoin/main.go 
 
     - name: Build
       run: GOARCH=amd64 GOOS=linux go build -o build/primerbitcoin cmd/primerbitcoin/main.go
 
-    - name: Persist Version
+    - name: Persist Version in code
+      uses: ad-m/github-push-action@master
+      with:
+        github_token: ${{ secrets.GH_TOKEN }}
+        branch: ${{ github.ref }}
+
+    - name: Persist Version as tag
       id: taggerFinal
       uses: anothrNick/github-tag-action@1.64.0
       env:
