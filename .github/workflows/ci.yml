@@ -36,19 +36,8 @@ jobs:
       run: |
         echo "${{ steps.taggerDryRun.outputs.part }}"
 
-    - name: Update version in code
-      run: |
-        sed -i 's/version\ =\ ".*"/version\ =\ "'"${{ steps.taggerDryRun.outputs.new_tag }}"'"/g' cmd/primerbitcoin/main.go
-
     - name: Build
       run: GOARCH=amd64 GOOS=linux go build -o build/primerbitcoin cmd/primerbitcoin/main.go
-
-    - name: Persist Version in code
-      run: |
-        git config --global user.name 'primerbitcoin'
-        git config --global user.email 'ci@primerbitcoin.noreply.github.com'
-        git commit -am "[auto] '"${{ steps.taggerDryRun.outputs.new_tag }}"'"
-        git push
 
     - name: Persist Version as tag
       id: taggerFinal

@@ -15,12 +15,14 @@ import (
 )
 
 var cfg config.Config
-var version = "0.2.0"
 
 func main() {
 
 	//Create global config
 	config.DecodeConfig(&cfg)
+
+	//Get latest tag
+	version := utils.GetLatestTag()
 
 	// Load env vars from .env file
 	err := godotenv.Load()
