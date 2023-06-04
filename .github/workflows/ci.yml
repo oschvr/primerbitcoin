@@ -1,6 +1,8 @@
 name: Primerbitcoin CI
 
-on: [push]
+on: push
+permissions:
+  contents: write
 
 jobs:
   ci:
@@ -37,16 +39,19 @@ jobs:
     - name: Update version in code
       run: |
         sed -i 's/version\ =\ ".*"/version\ =\ "'"${{ steps.taggerDryRun.outputs.new_tag }}"'"/g' cmd/primerbitcoin/main.go
-        cat cmd/primerbitcoin/main.go
 
     - name: Build
       run: GOARCH=amd64 GOOS=linux go build -o build/primerbitcoin cmd/primerbitcoin/main.go
 
     - name: Persist Version in code
-      uses: ad-m/github-push-action@master
+      uses: actions/checkout@v3
+      run: |
+        git config --global user.name 'primerbitcoin'
+        git config --global user.email 'ci@primerbitcoin.noreply.github.com'
+        git commit -am "[auto] '"${{ steps.taggerDryRun.outputs.new_tag }}"'"
+        git push
       with:
-        github_token: ${{ secrets.GH_TOKEN }}
-        branch: ${{ github.ref }}
+        token: "${{secrets.GH_TOKEN}}"
 
     - name: Persist Version as tag
       id: taggerFinal
