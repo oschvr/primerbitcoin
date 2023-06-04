@@ -21,8 +21,11 @@ func main() {
 	//Create global config
 	config.DecodeConfig(&cfg)
 
-	//Get latest tag
-	version := utils.GetLatestTag()
+	// Get version from env var, if none, assign dev
+	version := os.Getenv("APP_VERSION")
+	if version == "" {
+		version = "dev"
+	}
 
 	// Load env vars from .env file
 	err := godotenv.Load()

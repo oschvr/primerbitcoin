@@ -37,7 +37,7 @@ jobs:
         echo "${{ steps.taggerDryRun.outputs.part }}"
 
     - name: Build
-      run: GOARCH=amd64 GOOS=linux go build -o build/primerbitcoin cmd/primerbitcoin/main.go
+      run: APP_VERSION="${{ steps.taggerDryRun.outputs.new_tag }}" GOARCH=amd64 GOOS=linux go build -o build/primerbitcoin cmd/primerbitcoin/main.go
 
     - name: Persist Version as tag
       id: taggerFinal
