@@ -44,7 +44,6 @@ jobs:
       run: GOARCH=amd64 GOOS=linux go build -o build/primerbitcoin cmd/primerbitcoin/main.go
 
     - name: Persist Version in code
-      uses: actions/checkout@v3
       run: |
         git config --global user.name 'primerbitcoin'
         git config --global user.email 'ci@primerbitcoin.noreply.github.com'
