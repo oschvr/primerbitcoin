@@ -15,7 +15,7 @@ import (
 )
 
 var cfg config.Config
-var version = "0.1.2"
+var version = "0.2.0"
 
 func main() {
 
