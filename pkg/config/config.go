@@ -16,11 +16,11 @@ type Config struct {
 		Schedule string `yaml:"schedule"`
 	}
 	Order struct {
-		Side   string `yaml:"side"`
-		Major  string `yaml:"major"`
-		Minor  string `yaml:"minor"`
-		Symbol string `yaml:"symbol"`
-		Amount string `yaml:"amount"`
+		Side     string `yaml:"side"`
+		Major    string `yaml:"major"`
+		Minor    string `yaml:"minor"`
+		Symbol   string `yaml:"symbol"`
+		Quantity string `yaml:"quantity"`
 	}
 	Version string `yaml:"version"`
 }

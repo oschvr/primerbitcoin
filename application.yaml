@@ -5,7 +5,7 @@ scheduler:
   schedule: "0 0 * * *"
 order:
   side: BUY
-  minor: USDT
+  quantity: 5
+  minor: EUR
   major: BTC
-  symbol: BTCUSDT
-  amount: 0.001
+  symbol: BTCEUR
