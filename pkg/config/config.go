@@ -15,6 +15,9 @@ type Config struct {
 	Scheduler struct {
 		Schedule string `yaml:"schedule"`
 	}
+	Notifications struct {
+		Telegram string `yaml:"telegram"`
+	}
 	Order struct {
 		Side     string `yaml:"side"`
 		Major    string `yaml:"major"`

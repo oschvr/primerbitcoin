@@ -9,6 +9,7 @@ require (
 	github.com/go-telegram-bot-api/telegram-bot-api v4.6.4+incompatible
 	github.com/golang-migrate/migrate/v4 v4.15.2
 	github.com/joho/godotenv v1.5.1
+	github.com/shopspring/decimal v1.2.0
 	github.com/sirupsen/logrus v1.9.0
 	gopkg.in/yaml.v3 v3.0.1
 	modernc.org/sqlite v1.22.1

@@ -40,17 +40,12 @@ func main() {
 	// Define necessary configuration options
 	apiKey := os.Getenv("API_KEY")
 	apiSecret := os.Getenv("SECRET_KEY")
+
 	// Create a new Binance API client (USE TESTNET)
 	isProd, _ := strconv.ParseBool(os.Getenv("PRODUCTION"))
 	binance.UseTestnet = isProd
 
 	client := binance.NewClient(apiKey, apiSecret)
-
-	//------------------- TEST
-	// exchanges.ConvertFiatToMinor(client, cfg)
-	exchanges.CalculateAmount(client, cfg)
-
-	//------------------- TEST
 
 	// Create scheduler
 	scheduler := gocron.NewScheduler(time.UTC)
@@ -58,7 +53,7 @@ func main() {
 	// Configure job
 	job, err := scheduler.Tag(os.Getenv("APP_NAME")).Cron(cfg.Scheduler.Schedule).Do(func() {
 		// Run Create Order
-		//exchanges.CreateOrder(client, cfg)
+		exchanges.CreateOrder(client, cfg)
 	})
 
 	if err != nil {
