@@ -2,17 +2,14 @@ package main
 
 import (
 	"fmt"
-	binance "github.com/adshao/go-binance/v2"
 	"github.com/common-nighthawk/go-figure"
-	"github.com/go-co-op/gocron"
 	"github.com/joho/godotenv"
+	bitsosdk "github.com/xiam/bitso-go/bitso"
 	"os"
 	"primerbitcoin/database"
+	"primerbitcoin/pkg/bitso"
 	"primerbitcoin/pkg/config"
-	"primerbitcoin/pkg/exchanges"
 	"primerbitcoin/pkg/utils"
-	"strconv"
-	"time"
 )
 
 var cfg config.Config
@@ -41,27 +38,36 @@ func main() {
 	apiKey := os.Getenv("API_KEY")
 	apiSecret := os.Getenv("SECRET_KEY")
 
-	// Create a new Binance API client (USE TESTNET)
-	isProd, _ := strconv.ParseBool(os.Getenv("PRODUCTION"))
-	binance.UseTestnet = isProd
+	/// BITSO ---------
+	client := bitsosdk.NewClient(nil)
+	client.SetAPIKey(apiKey)
+	client.SetAPISecret(apiSecret)
 
-	client := binance.NewClient(apiKey, apiSecret)
+	bitso.CreateOrder(client, cfg)
 
-	// Create scheduler
-	scheduler := gocron.NewScheduler(time.UTC)
+	/// BINANCE ---------
 
-	// Configure job
-	job, err := scheduler.Tag(os.Getenv("APP_NAME")).Cron(cfg.Scheduler.Schedule).Do(func() {
-		// Run Create Order
-		exchanges.CreateOrder(client, cfg)
-	})
-
-	if err != nil {
-		utils.Logger.Errorf("Unable to run cronjob %s", err)
-	}
-
-	utils.Logger.Infof("Running job %s with cron schedule %s", job.Tags(), cfg.Scheduler.Schedule)
-
-	// Start scheduler
-	scheduler.StartBlocking()
+	//// Create a new Binance API client (USE TESTNET)
+	//isProd, _ := strconv.ParseBool(os.Getenv("PRODUCTION"))
+	//binance.UseTestnet = isProd
+	//
+	//client := binance.NewClient(apiKey, apiSecret)
+	//
+	//// Create scheduler
+	//scheduler := gocron.NewScheduler(time.UTC)
+	//
+	//// Configure job
+	//job, err := scheduler.Tag(os.Getenv("APP_NAME")).Cron(cfg.Scheduler.Schedule).Do(func() {
+	//	// Run Create Order
+	//	binance.CreateOrder(client, cfg)
+	//})
+	//
+	//if err != nil {
+	//	utils.Logger.Errorf("Unable to run cronjob %s", err)
+	//}
+	//
+	//utils.Logger.Infof("Running job %s with cron schedule %s", job.Tags(), cfg.Scheduler.Schedule)
+	//
+	//// Start scheduler
+	//scheduler.StartBlocking()
 }

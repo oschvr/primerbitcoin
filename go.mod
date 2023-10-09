@@ -9,7 +9,7 @@ require (
 	github.com/go-telegram-bot-api/telegram-bot-api v4.6.4+incompatible
 	github.com/golang-migrate/migrate/v4 v4.15.2
 	github.com/joho/godotenv v1.5.1
-	github.com/shopspring/decimal v1.2.0
+	github.com/shopspring/decimal v1.3.1
 	github.com/sirupsen/logrus v1.9.0
 	gopkg.in/yaml.v3 v3.0.1
 	modernc.org/sqlite v1.22.1
@@ -44,6 +44,7 @@ require (
 	github.com/stretchr/objx v0.5.0 // indirect
 	github.com/technoweenie/multipartstreamer v1.0.1 // indirect
 	github.com/xanzy/ssh-agent v0.2.1 // indirect
+	github.com/xiam/bitso-go v0.0.0-20211227141552-99071f481ab5 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519 // indirect
 	golang.org/x/mod v0.5.0 // indirect

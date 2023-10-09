@@ -8,6 +8,6 @@ notifications:
 order:
   side: BUY
   quantity: 10
-  minor: EUR
-  major: BTC
+  minor: mxn
+  major: btc
   symbol: BTCEUR

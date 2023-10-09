@@ -1,4 +1,4 @@
-package exchanges
+package binance
 
 import (
 	"context"
