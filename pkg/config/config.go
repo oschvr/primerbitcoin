@@ -23,6 +23,7 @@ type Config struct {
 		Major    string `yaml:"major"`
 		Minor    string `yaml:"minor"`
 		Symbol   string `yaml:"symbol"`
+		Book     string `yaml:"book"`
 		Quantity string `yaml:"quantity"`
 	}
 	Version string `yaml:"version"`

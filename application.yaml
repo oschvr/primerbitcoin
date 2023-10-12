@@ -6,8 +6,10 @@ scheduler:
 notifications:
   telegram: true
 order:
-  side: BUY
-  quantity: 10
+  decimals: 8
+  side: buy
+  quantity: 200
   minor: mxn
   major: btc
   symbol: BTCEUR
+  book: btc_mxn
