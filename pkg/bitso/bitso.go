@@ -127,14 +127,14 @@ func CreateOrder(client *bitsosdk.Client, cfg config.Config) {
 	_, canRun := estimateRunway(client, cfg)
 
 	if canRun == false {
-		utils.Logger.Fatalf("Unable to create order. Not enough balance: %0.2f%s", balance, orderSettings.Minor)
+		utils.Logger.Errorf("Unable to create order. Not enough balance: %0.2f%s", balance, orderSettings.Minor)
 		return
 	}
 
 	// Prepare database insert
 	stmt, err := database.DB.Prepare("INSERT INTO orders(exchange, symbol, quantity, price, success, order_id) VALUES (?,?,?,?,?,?)")
 	if err != nil {
-		utils.Logger.Fatal("Unable to prepare order statement")
+		utils.Logger.Errorf("Unable to prepare order statement")
 	}
 	defer func(stmt *sql.Stmt) {
 		err := stmt.Close()
