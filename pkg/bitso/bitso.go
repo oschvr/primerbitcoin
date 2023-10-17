@@ -13,6 +13,7 @@ import (
 
 func getBalance(client *bitsosdk.Client, minor string) float64 {
 	utils.Logger.Info("Getting balance")
+
 	balances, err := client.Balances(nil)
 	if err != nil {
 		utils.Logger.Fatalln("Error getting balances", err)
@@ -21,12 +22,12 @@ func getBalance(client *bitsosdk.Client, minor string) float64 {
 	for _, balance := range balances {
 		if balance.Currency.String() == minor {
 			return balance.Available.Float64()
-		} else {
-			utils.Logger.Infof("Nothing found for %s", minor)
-			return 0.0
 		}
 	}
+
+	utils.Logger.Infof("Nothing found for %s", minor)
 	return 0.0
+
 }
 
 // Symbol == Book
@@ -173,7 +174,7 @@ func CreateOrder(client *bitsosdk.Client, cfg config.Config) {
 		Book:  book,
 		Side:  side,
 		Type:  bitsosdk.OrderTypeMarket,
-		Minor: bitsosdk.ToMonetary(amount),
+		Major: bitsosdk.ToMonetary(amount),
 		Price: bitsosdk.ToMonetary(price),
 	}
 
@@ -183,5 +184,9 @@ func CreateOrder(client *bitsosdk.Client, cfg config.Config) {
 		utils.Logger.Fatalf("Unable to place order, %s", err)
 	}
 
-	fmt.Println(order)
+	// Send msg to telegram
+	notifications.SendTelegramMessage(fmt.Sprintf("[🟢primerbitcoin] 🎉 You just bought %.8f of %s at price of %.2f %s in %s.\n 💸 Total spent : %.2f \n 🏦Remaining balance of %.2f", amount, orderSettings.Major, price, orderSettings.Minor, "bitso", quantity, balance))
+
+	utils.Logger.Infof("Order ID: %s. Bought %.8f of %s at price of %.2f %s in %s. 💸 Total spent : %.2f. Remaining balance of %.2f", order, amount, orderSettings.Major, price, orderSettings.Minor, "bitso", quantity, balance)
+
 }
