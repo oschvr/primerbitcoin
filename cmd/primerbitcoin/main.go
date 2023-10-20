@@ -15,6 +15,7 @@ import (
 	"primerbitcoin/pkg/bitso"
 	"primerbitcoin/pkg/config"
 	"primerbitcoin/pkg/utils"
+	"sync"
 	"time"
 )
 
@@ -40,6 +41,11 @@ func main() {
 	banner := figure.NewFigure(fmt.Sprintf("%s:%s", os.Getenv("APP_NAME"), version), "", true)
 	banner.Print()
 
+	// Create waitGroup
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+
+	// Add custom metrics
 	opsProcessed := promauto.NewCounter(prometheus.CounterOpts{
 		Name: "myapp_processed_ops_total",
 		Help: "The total number of processed events",
@@ -51,10 +57,15 @@ func main() {
 		}
 	}()
 
+	// Handle metrics server
 	http.Handle("/metrics", promhttp.Handler())
 
 	// Start metrics server concurrently
-	go func() { utils.Logger.Fatal(http.ListenAndServe(":2112", nil)) }()
+	wg.Add(1)
+	go func() {
+		utils.Logger.Fatal(http.ListenAndServe(":2112", nil))
+		wg.Done()
+	}()
 
 	// Define necessary configuration options
 	apiKey := os.Getenv("API_KEY")
@@ -81,10 +92,14 @@ func main() {
 	utils.Logger.Infof("Running job %s with cron schedule %s", job.Tags(), cfg.Scheduler.Schedule)
 
 	// Start scheduler concurrently
-	go func() { scheduler.StartBlocking() }()
+	wg.Add(1)
+	go func() {
+		scheduler.StartBlocking()
+		wg.Done()
+	}()
 
 	// Block indefinitely
-	select {}
+	wg.Wait()
 
 	/// BINANCE ---------
 	//// Create a new Binance API client (USE TESTNET)
