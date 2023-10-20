@@ -5,7 +5,11 @@ import (
 	"github.com/common-nighthawk/go-figure"
 	"github.com/go-co-op/gocron"
 	"github.com/joho/godotenv"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	bitsosdk "github.com/xiam/bitso-go/bitso"
+	"net/http"
 	"os"
 	"primerbitcoin/database"
 	"primerbitcoin/pkg/bitso"
@@ -36,6 +40,22 @@ func main() {
 	banner := figure.NewFigure(fmt.Sprintf("%s:%s", os.Getenv("APP_NAME"), version), "", true)
 	banner.Print()
 
+	opsProcessed := promauto.NewCounter(prometheus.CounterOpts{
+		Name: "myapp_processed_ops_total",
+		Help: "The total number of processed events",
+	})
+	go func() {
+		for {
+			opsProcessed.Inc()
+			time.Sleep(2 * time.Second)
+		}
+	}()
+
+	http.Handle("/metrics", promhttp.Handler())
+
+	// Start metrics server concurrently
+	go func() { utils.Logger.Fatal(http.ListenAndServe(":2112", nil)) }()
+
 	// Define necessary configuration options
 	apiKey := os.Getenv("API_KEY")
 	apiSecret := os.Getenv("SECRET_KEY")
@@ -60,8 +80,11 @@ func main() {
 
 	utils.Logger.Infof("Running job %s with cron schedule %s", job.Tags(), cfg.Scheduler.Schedule)
 
-	// Start scheduler
-	scheduler.StartBlocking()
+	// Start scheduler concurrently
+	go func() { scheduler.StartBlocking() }()
+
+	// Block indefinitely
+	select {}
 
 	/// BINANCE ---------
 	//// Create a new Binance API client (USE TESTNET)
@@ -69,6 +92,5 @@ func main() {
 	//binance.UseTestnet = isProd
 	//
 	//client := binance.NewClient(apiKey, apiSecret)
-	//
-	//
+
 }
