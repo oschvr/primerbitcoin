@@ -1,5 +1,3 @@
-BEGIN TRANSACTION;
-
 ALTER TABLE orders RENAME TO orders_old;
 
 CREATE TABLE IF NOT EXISTS orders (
@@ -14,5 +12,3 @@ CREATE TABLE IF NOT EXISTS orders (
 );
 
 INSERT INTO orders (id, exchange, order_id, symbol, quantity, price, success, created_at) SELECT id, exchange, order_id, symbol, quantity, price, success, created_at FROM orders_old;
-
-COMMIT;

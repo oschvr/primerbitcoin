@@ -47,7 +47,6 @@ func Migrate(config config.Config) {
 
 	// Create a new migration source
 	m, err := migrate.NewWithInstance("iofs", migrationsEmbed, os.Getenv("DATABASE_NAME"), driver)
-	utils.Logger.Print("Migrations")
 	if err != nil {
 		utils.Logger.Error("Unable to create migrations from source, ", err)
 		panic(err)
@@ -59,7 +58,7 @@ func Migrate(config config.Config) {
 			utils.Logger.Info("No migrations to apply")
 			return
 		} else {
-			utils.Logger.Error("Unable to run migrations", err)
+			utils.Logger.Error("Unable to run migrations, ", err)
 			panic(err)
 		}
 		return
