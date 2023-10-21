@@ -19,12 +19,12 @@ type Config struct {
 		Telegram string `yaml:"telegram"`
 	}
 	Order struct {
-		Side     string `yaml:"side"`
-		Major    string `yaml:"major"`
-		Minor    string `yaml:"minor"`
-		Symbol   string `yaml:"symbol"`
-		Book     string `yaml:"book"`
-		Quantity string `yaml:"quantity"`
+		Side   string `yaml:"side"`
+		Major  string `yaml:"major"`
+		Minor  string `yaml:"minor"`
+		Symbol string `yaml:"symbol"`
+		Book   string `yaml:"book"`
+		Amount string `yaml:"amount"`
 	}
 	Version string `yaml:"version"`
 }

@@ -12,8 +12,6 @@ import (
 )
 
 func getBalance(client *bitsosdk.Client, minor string) float64 {
-	utils.Logger.Info("Getting balance")
-
 	balances, err := client.Balances(nil)
 	if err != nil {
 		utils.Logger.Fatalln("Error getting balances", err)
@@ -44,22 +42,19 @@ func getPrice(client *bitsosdk.Client, major string, minor string) float64 {
 	return price
 }
 
-func calculateAmount(client *bitsosdk.Client, cfg config.Config) float64 {
+func calculateQuantity(client *bitsosdk.Client, cfg config.Config) float64 {
 	// Get order settings
 	var orderSettings = cfg.Order
 
-	// Disclaimer
-	utils.Logger.Infof("Amounts are parsed and calculated up to the 8 decimal")
-
 	// Calculate price
 	price := getPrice(client, orderSettings.Major, orderSettings.Minor)
-	quantity, err := strconv.ParseFloat(orderSettings.Quantity, 64)
+	amount, err := strconv.ParseFloat(orderSettings.Amount, 64)
 	if err != nil {
-		utils.Logger.Errorf("Unable to parse quantity")
+		utils.Logger.Errorf("Unable to parse amount")
 	}
-	amount := quantity / price
+	quantity := amount / price
 
-	return amount
+	return quantity
 }
 
 func estimateRunway(client *bitsosdk.Client, cfg config.Config) (float64, bool) {
@@ -68,19 +63,14 @@ func estimateRunway(client *bitsosdk.Client, cfg config.Config) (float64, bool) 
 
 	// Get balance
 	balance := getBalance(client, orderSettings.Minor)
-	utils.Logger.Infof("Balance of %s is %0.8f", orderSettings.Minor, balance)
 
-	// Get price for symbol
-	price := getPrice(client, orderSettings.Major, orderSettings.Minor)
-	utils.Logger.Infof("Price is %0.2f%s for 1 %s", price, orderSettings.Minor, orderSettings.Major)
-
-	// Calculate amount to buy
-	amount := calculateAmount(client, cfg)
-	utils.Logger.Infof("Amount to buy of %0.8f", amount)
+	// Calculate quantity to buy
+	quantity := calculateQuantity(client, cfg)
+	utils.Logger.Infof("Calculated quantity based on price: %0.8f%s", quantity, orderSettings.Major)
 
 	// Estimate runway
 	// Minimum amount is 10mxn
-	runway := balance / amount
+	runway := balance / quantity
 	canRun := false
 
 	switch {
@@ -113,12 +103,16 @@ func estimateRunway(client *bitsosdk.Client, cfg config.Config) (float64, bool) 
 
 // CreateOrder runs a custom buy/sell order
 func CreateOrder(client *bitsosdk.Client, cfg config.Config) {
+
+	// Disclaimer
+	utils.Logger.Infof("Quantities are calculated up to the 8 decimal")
+
 	// Get order settings
 	var orderSettings = cfg.Order
 
 	// Get balance
 	balance := getBalance(client, orderSettings.Minor)
-	utils.Logger.Infof("Balance of %s is %0.8f", orderSettings.Minor, balance)
+	utils.Logger.Infof("Current balance of %s is %0.2f", orderSettings.Minor, balance)
 
 	// Get price for symbol
 	price := getPrice(client, orderSettings.Major, orderSettings.Minor)
@@ -132,29 +126,29 @@ func CreateOrder(client *bitsosdk.Client, cfg config.Config) {
 		return
 	}
 
+	// Calculate quantity to buy
+	quantity := calculateQuantity(client, cfg)
+
+	// Check if the amount is more than the minimum
+	amount := quantity * price
+
 	// Prepare database insert
-	stmt, err := database.DB.Prepare("INSERT INTO orders(exchange, symbol, quantity, price, success, order_id) VALUES (?,?,?,?,?,?)")
+	stmt, err := database.DB.Prepare("INSERT INTO orders(exchange, symbol, quantity, amount, price, success, order_id) VALUES (?,?,?,?,?,?,?)")
 	if err != nil {
 		utils.Logger.Errorf("Unable to prepare order statement")
 	}
 	defer func(stmt *sql.Stmt) {
 		err := stmt.Close()
 		if err != nil {
-
+			utils.Logger.Errorf("Unable to run order statement")
 		}
 	}(stmt)
 
-	// Calculate amount to buy
-	amount := calculateAmount(client, cfg)
+	utils.Logger.Infof("Amount to buy of %0.2f for %0.8f%s", amount, quantity, orderSettings.Major)
 
-	// Check if the quantity is more than the minimum
-	quantity := amount * price
-
-	utils.Logger.Infof("Amount to buy of %0.8f for %0.2f%s", amount, quantity, orderSettings.Minor)
-
-	if quantity < 10.0 {
-		utils.Logger.Fatalf("Error: %0.2f is less than the minimum 10.00%s", quantity, orderSettings.Minor)
-		notifications.SendTelegramMessage(fmt.Sprintf("[🔴 primerbitcoin] %s: %0.2f is less than the minimum 10.00%s. Primerbitcoin can't run.", "bitso", quantity, orderSettings.Minor))
+	if amount < 10.0 {
+		utils.Logger.Fatalf("Error: %0.2f is less than the minimum 10.00%s", amount, orderSettings.Minor)
+		notifications.SendTelegramMessage(fmt.Sprintf("[🔴 primerbitcoin] %s: %0.2f is less than the minimum 10.00%s. Primerbitcoin can't run.", "bitso", amount, orderSettings.Minor))
 		return
 	}
 
@@ -174,7 +168,7 @@ func CreateOrder(client *bitsosdk.Client, cfg config.Config) {
 		Book:  book,
 		Side:  side,
 		Type:  bitsosdk.OrderTypeMarket,
-		Major: bitsosdk.ToMonetary(amount),
+		Major: bitsosdk.ToMonetary(quantity),
 		Price: bitsosdk.ToMonetary(price),
 	}
 
@@ -184,9 +178,21 @@ func CreateOrder(client *bitsosdk.Client, cfg config.Config) {
 		utils.Logger.Fatalf("Unable to place order, %s", err)
 	}
 
-	// Send msg to telegram
-	notifications.SendTelegramMessage(fmt.Sprintf("[🟢primerbitcoin] 🎉 You just bought %.8f of %s at price of %.2f %s in %s.\n 💸 Total spent : %.2f \n 🏦Remaining balance of %.2f", amount, orderSettings.Major, price, orderSettings.Minor, "bitso", quantity, balance))
+	// Persist order in db
+	if order != "" {
+		// Execute sql statement
+		_, err := stmt.Exec("BITSO", orderSettings.Book, quantity, amount, price, true, order)
+		if err != nil {
+			utils.Logger.Warn("Unable to persist order in db, ", err)
+		}
+	}
 
-	utils.Logger.Infof("Order ID: %s. Bought %.8f of %s at price of %.2f %s in %s. 💸 Total spent : %.2f. Remaining balance of %.2f", order, amount, orderSettings.Major, price, orderSettings.Minor, "bitso", quantity, balance)
+	// Refresh balance
+	balance = getBalance(client, orderSettings.Minor)
+
+	// Send msg to telegram
+	notifications.SendTelegramMessage(fmt.Sprintf("[🟢primerbitcoin] 🎉 You just bought %.8f of %s at price of %.2f %s in %s.\n 💸 Total spent : %.2f \n 🏦Remaining balance: %.2f", quantity, orderSettings.Major, price, orderSettings.Minor, "bitso", amount, balance))
+
+	utils.Logger.Infof("Order ID: %s. Bought %.8f of %s at price of %.2f %s in %s. 💸 Total spent : %.2f. Remaining balance: %.2f", order, quantity, orderSettings.Major, price, orderSettings.Minor, "bitso", amount, balance)
 
 }

@@ -8,7 +8,7 @@ notifications:
 order:
   decimals: 8
   side: buy
-  quantity: 20
+  amount: 20
   minor: mxn
   major: btc
   symbol: BTCEUR

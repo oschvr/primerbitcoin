@@ -5,8 +5,6 @@ import (
 	"github.com/common-nighthawk/go-figure"
 	"github.com/go-co-op/gocron"
 	"github.com/joho/godotenv"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	bitsosdk "github.com/xiam/bitso-go/bitso"
 	"net/http"
@@ -14,6 +12,7 @@ import (
 	"primerbitcoin/database"
 	"primerbitcoin/pkg/bitso"
 	"primerbitcoin/pkg/config"
+	"primerbitcoin/pkg/metrics"
 	"primerbitcoin/pkg/utils"
 	"sync"
 	"time"
@@ -46,16 +45,7 @@ func main() {
 	wg.Add(1)
 
 	// Add custom metrics
-	opsProcessed := promauto.NewCounter(prometheus.CounterOpts{
-		Name: "myapp_processed_ops_total",
-		Help: "The total number of processed events",
-	})
-	go func() {
-		for {
-			opsProcessed.Inc()
-			time.Sleep(2 * time.Second)
-		}
-	}()
+	metrics.RecordMetrics()
 
 	// Handle metrics server
 	http.Handle("/metrics", promhttp.Handler())
@@ -79,27 +69,32 @@ func main() {
 	// Create scheduler
 	scheduler := gocron.NewScheduler(time.UTC)
 
-	// Configure job
-	job, err := scheduler.Tag(os.Getenv("APP_NAME")).Cron(cfg.Scheduler.Schedule).Do(func() {
-		// Run Create Order
+	if os.Getenv("PRODUCTION") == "true" {
 		bitso.CreateOrder(client, cfg)
-	})
+	} else {
 
-	if err != nil {
-		utils.Logger.Errorf("Unable to run cronjob %s", err)
+		// Configure job
+		job, err := scheduler.Tag(os.Getenv("APP_NAME")).Cron(cfg.Scheduler.Schedule).Do(func() {
+			// Run Create Order
+			bitso.CreateOrder(client, cfg)
+		})
+
+		if err != nil {
+			utils.Logger.Errorf("Unable to run cronjob %s", err)
+		}
+
+		utils.Logger.Infof("Running job %s with cron schedule %s", job.Tags(), cfg.Scheduler.Schedule)
+
+		// Start scheduler concurrently
+		wg.Add(1)
+		go func() {
+			scheduler.StartBlocking()
+			wg.Done()
+		}()
+
+		// Block indefinitely
+		wg.Wait()
 	}
-
-	utils.Logger.Infof("Running job %s with cron schedule %s", job.Tags(), cfg.Scheduler.Schedule)
-
-	// Start scheduler concurrently
-	wg.Add(1)
-	go func() {
-		scheduler.StartBlocking()
-		wg.Done()
-	}()
-
-	// Block indefinitely
-	wg.Wait()
 
 	/// BINANCE ---------
 	//// Create a new Binance API client (USE TESTNET)

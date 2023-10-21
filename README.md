@@ -24,3 +24,7 @@ migrate create -ext sql -dir db/migrations -seq <migration_name>
 sudo groupadd --system primerbitcoin
 sudo useradd -s /sbin/bash --system -g 
 ```
+
+## Concepts
+- amount refers to the quantity of minor (fiat) that is intended to be spent and traded for the quantity
+- quantity refers to the quantity of major (crypto) to be bought (that is, the floating point, decimal of the amount)
