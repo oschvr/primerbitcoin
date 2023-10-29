@@ -15,6 +15,9 @@ type Config struct {
 	Scheduler struct {
 		Schedule string `yaml:"schedule"`
 	}
+	Metrics struct {
+		Interval int `yaml:"interval"`
+	}
 	Notifications struct {
 		Telegram string `yaml:"telegram"`
 	}

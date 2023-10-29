@@ -45,7 +45,7 @@ func main() {
 	wg.Add(1)
 
 	// Add custom metrics
-	metrics.RecordMetrics()
+	metrics.RecordMetrics(cfg)
 
 	// Handle metrics server
 	http.Handle("/metrics", promhttp.Handler())

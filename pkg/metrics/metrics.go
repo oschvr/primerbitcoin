@@ -5,6 +5,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"primerbitcoin/database"
+	"primerbitcoin/pkg/config"
 	"primerbitcoin/pkg/utils"
 	"strconv"
 	"time"
@@ -35,7 +36,6 @@ func getTotalQtyBought() float64 {
 	if err != nil {
 		utils.Logger.Error("Unable to parse total qty query, ", err)
 	}
-
 	return parsedQty
 }
 
@@ -69,7 +69,9 @@ func getTotalAmountSpent() float64 {
 }
 
 // RecordMetrics creates custom metrics for the prometheus metrics server
-func RecordMetrics() {
+func RecordMetrics(cfg config.Config) {
+
+	interval := time.Duration(cfg.Metrics.Interval) * time.Second
 
 	// Gauge - It represents a single numerical value that can arbitrarily go up and down.
 	// Counter - It is a cumulative metric that represents a single monotonically increasing counter. It can only go up and be reset to zero on restart
@@ -80,8 +82,11 @@ func RecordMetrics() {
 		Help: "Total quantity of Major currency bought",
 	})
 	go func() {
-		qty := getTotalQtyBought()
-		pbTotalQuantityBought.Add(qty)
+		for {
+			qty := getTotalQtyBought()
+			pbTotalQuantityBought.Add(qty)
+			time.Sleep(interval)
+		}
 	}()
 
 	pbTotalAmountSpent := promauto.NewGauge(prometheus.GaugeOpts{
@@ -89,18 +94,12 @@ func RecordMetrics() {
 		Help: "Total amount of minor currency spent",
 	})
 	go func() {
-		amt := getTotalAmountSpent()
-		pbTotalAmountSpent.Add(amt)
+		for {
+			amt := getTotalAmountSpent()
+			pbTotalAmountSpent.Add(amt)
+			time.Sleep(interval)
+		}
+
 	}()
 
-	opsProcessed := promauto.NewCounter(prometheus.CounterOpts{
-		Name: "myapp_processed_ops_total",
-		Help: "The total number of processed events",
-	})
-	go func() {
-		for {
-			opsProcessed.Inc()
-			time.Sleep(2 * time.Second)
-		}
-	}()
 }

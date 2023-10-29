@@ -3,6 +3,8 @@ database:
   host: primerbitcoin.sqlite
 scheduler:
   schedule: "0 0 * * *"
+metrics:
+  interval: 30
 notifications:
   telegram: true
 order:
