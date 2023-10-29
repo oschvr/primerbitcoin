@@ -72,6 +72,7 @@ func getTotalAmountSpent() float64 {
 func RecordMetrics(cfg config.Config) {
 
 	interval := time.Duration(cfg.Metrics.Interval) * time.Second
+	utils.Logger.Infof("Metrics interval is %d seconds", cfg.Metrics.Interval)
 
 	// Gauge - It represents a single numerical value that can arbitrarily go up and down.
 	// Counter - It is a cumulative metric that represents a single monotonically increasing counter. It can only go up and be reset to zero on restart
