@@ -30,6 +30,92 @@ sudo useradd -s /sbin/bash --system -g
 - quantity refers to the quantity of major (crypto) to be bought (that is, the floating point, decimal of the amount)
 
 
+## NGINX
+Adding nginx with basic auth to serve metrics
+```
+# run as root/sudo user
+sudo su
+
+# Install nginx
+apt install nginx apache2-utils -y
+
+# Adjust the firewall 
+ufw app list
+
+# Enable ssh to avoid being locked out
+ufw allow 'OpenSSH'
+
+# Allow NGINX https
+ufw allow 'Nginx HTTPS'
+
+# Enable & start nginx
+systemctl status nginx
+
+# Generate random hex password
+PASS=$(openssl rand -hex 18)
+echo "[primerbitcoin]: nginx basic auth password is $PASS"
+
+# Create basic auth password 
+htpasswd -b -c /etc/apache2/.htpasswd primerbitcoin $(echo $PASS)
+cat /etc/apache2/.htpasswd
+
+# Create server block
+cat << 'EOF' > /etc/nginx/sites-available/primerbitcoin.com
+server {
+  listen          443;
+  listen          [::]:443;
+  server_name     primerbitcoin.com;
+  location /api {
+        proxy_pass http://127.0.0.1:8080/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host $host;
+        
+        auth_basic "Admin";
+        auth_basic_user_file /etc/apache2/.htpasswd; 
+  }
+  location /metrics {
+        proxy_pass http://127.0.0.1:9090/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host $host;
+        
+        auth_basic "Admin";
+        auth_basic_user_file /etc/apache2/.htpasswd; 
+  }
+}
+EOF
+# Check server block
+cat /etc/nginx/sites-available/primerbitcoin.com
+
+# Enable server block with symlink
+ln -s /etc/nginx/sites-available/primerbitcoin.com /etc/nginx/sites-enabled/
+
+# Check and Reload nginx
+nginx -t
+systemctl restart nginx
+
+----
+
+## Use Let's Encrypt to secure nginx at port 443
+# https://www.digitalocean.com/community/tutorials/how-to-secure-nginx-with-let-s-encrypt-on-ubuntu-22-04
+
+# Install nginx using snap
+snap install --classic certbot
+
+# symlink certbot
+ln -s /snap/bin/certbot /usr/bin/certbot
+
+
+
+
+
+```
+
 ## Prom + Grafana
 
 We'll install prometheus + grafana on a raspberry pi 4
@@ -86,7 +172,7 @@ scrape_configs:
       - targets: ["metrics.primerbitcoin.com"]
     basic_auth:
       username: 'primerbitcoin'
-      password: 'cccccbhlitbuchfgjhenfuvberlchkgekctcuefjlgbi'
+      password: 'cccccbhlitbuucecrntvuldgjerkvdtkfebjhhhfuvfd'
 ----
 ```
 
