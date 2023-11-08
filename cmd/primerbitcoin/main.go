@@ -69,7 +69,7 @@ func main() {
 	// Create scheduler
 	scheduler := gocron.NewScheduler(time.UTC)
 
-	if os.Getenv("PRODUCTION") == "true" {
+	if os.Getenv("PRODUCTION") == "false" {
 		bitso.CreateOrder(client, cfg)
 	} else {
 
@@ -95,12 +95,4 @@ func main() {
 		// Block indefinitely
 		wg.Wait()
 	}
-
-	/// BINANCE ---------
-	//// Create a new Binance API client (USE TESTNET)
-	//isProd, _ := strconv.ParseBool(os.Getenv("PRODUCTION"))
-	//binance.UseTestnet = isProd
-	//
-	//client := binance.NewClient(apiKey, apiSecret)
-
 }
