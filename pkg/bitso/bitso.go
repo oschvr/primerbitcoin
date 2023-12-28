@@ -11,16 +11,21 @@ import (
 	"strconv"
 )
 
+// getBalance will attempt to retrieve the balance based on the specified minor
 func getBalance(client *bitsosdk.Client, minor string) float64 {
 	balances, err := client.Balances(nil)
+
 	if err != nil {
 		utils.Logger.Fatalln("Error getting balances", err)
 	}
 
+	// Get balances
 	for _, balance := range balances {
 		if balance.Currency.String() == minor {
+			utils.Logger.Infof("Current balance of %s is %0.2f", minor, balance.Available.Float64())
 			return balance.Available.Float64()
 		}
+
 	}
 
 	utils.Logger.Infof("Nothing found for %s", minor)
@@ -28,6 +33,7 @@ func getBalance(client *bitsosdk.Client, minor string) float64 {
 
 }
 
+// getPrice will attempt to get the market price for major/minor (fiat/crypto)
 // Symbol == Book
 func getPrice(client *bitsosdk.Client, major string, minor string) float64 {
 
@@ -42,6 +48,7 @@ func getPrice(client *bitsosdk.Client, major string, minor string) float64 {
 	return price
 }
 
+// calculateQuantity will compute the quantity of major to be bought by the amount of minor specified
 func calculateQuantity(client *bitsosdk.Client, cfg config.Config) float64 {
 	// Get order settings
 	var orderSettings = cfg.Order
@@ -53,24 +60,25 @@ func calculateQuantity(client *bitsosdk.Client, cfg config.Config) float64 {
 		utils.Logger.Errorf("Unable to parse amount")
 	}
 	quantity := amount / price
+	utils.Logger.Infof("Calculated quantity based on price: %0.8f%s", quantity, orderSettings.Major)
 
 	return quantity
 }
 
+// estimateRunway will compute the number of buys that can be done based on the current run's price
 func estimateRunway(client *bitsosdk.Client, cfg config.Config) (float64, bool) {
 	// Get order settings
 	var orderSettings = cfg.Order
 
 	// Get balance
 	balance := getBalance(client, orderSettings.Minor)
+	// utils.Logger.Infof("Current balance of %s is %0.2f", orderSettings.Minor, balance)
 
-	// Calculate quantity to buy
-	quantity := calculateQuantity(client, cfg)
-	utils.Logger.Infof("Calculated quantity based on price: %0.8f%s", quantity, orderSettings.Major)
+	parsedAmount, _ := strconv.ParseFloat(orderSettings.Amount, 64)
 
 	// Estimate runway
 	// Minimum amount is 10mxn
-	runway := balance / quantity
+	runway := balance / parsedAmount
 	canRun := false
 
 	switch {
@@ -112,7 +120,7 @@ func CreateOrder(client *bitsosdk.Client, cfg config.Config) {
 
 	// Get balance
 	balance := getBalance(client, orderSettings.Minor)
-	utils.Logger.Infof("Current balance of %s is %0.2f", orderSettings.Minor, balance)
+	// utils.Logger.Infof("Current balance of %s is %0.2f", orderSettings.Minor, balance)
 
 	// Get price for symbol
 	price := getPrice(client, orderSettings.Major, orderSettings.Minor)
@@ -147,7 +155,7 @@ func CreateOrder(client *bitsosdk.Client, cfg config.Config) {
 	utils.Logger.Infof("Amount to buy of %0.2f for %0.8f%s", amount, quantity, orderSettings.Major)
 
 	if amount < 10.0 {
-		utils.Logger.Fatalf("Error: %0.2f is less than the minimum 10.00%s", amount, orderSettings.Minor)
+		utils.Logger.Warnf("Error: %0.2f is less than the minimum 10.00%s", amount, orderSettings.Minor)
 		notifications.SendTelegramMessage(fmt.Sprintf("[🔴 primerbitcoin] %s: %0.2f is less than the minimum 10.00%s. Primerbitcoin can't run.", "bitso", amount, orderSettings.Minor))
 		return
 	}
@@ -175,7 +183,8 @@ func CreateOrder(client *bitsosdk.Client, cfg config.Config) {
 	// Place order
 	order, err := client.PlaceOrder(orderPlacement)
 	if err != nil {
-		utils.Logger.Fatalf("Unable to place order, %s", err)
+		notifications.SendTelegramMessage(fmt.Sprintf("[🔴 primerbitcoin] %s: Primerbitcoin couldn't place order: %s", "bitso", err))
+		utils.Logger.Warnf("Unable to place order, %s", err)
 	}
 
 	// Persist order in db
