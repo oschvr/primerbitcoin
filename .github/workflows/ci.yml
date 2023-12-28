@@ -7,6 +7,7 @@ permissions:
 jobs:
   ci:
     runs-on: ubuntu-latest
+    if: ${{ !contains(github.event.head_commit.message, '[auto]') }}
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
